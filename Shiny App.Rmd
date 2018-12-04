@@ -1,0 +1,107 @@
+---
+title: "Shiny App"
+author: "Ekim Buyuk"
+date: "11/30/2018"
+output: html_document
+runtime: shiny
+---
+
+```{r}
+library(shiny)
+library(shinythemes)
+```
+
+```{r}
+shinyApp(
+  ui <- fluidPage(
+    theme = shinytheme("flatly"),
+    titlePanel("Find Your Doggo Companion"),
+    sidebarPanel("Your answers to the following questions will determine the best doggos that match your personality and your needs, leading to an all together better doggo-human companionship. Using our state-of-the art mixed membership modeling algorithms, we offer the best doggo matches."),
+    fluidRow(
+      column(4,
+             radioButtons("dwelling", h3("What kind of home do you live in?"),
+                        choices = list("Apartment" = 1, "House" = 2,
+                                       "Dorm" = 3),selected = 1)),
+      column(4,
+             radioButtons("weather", h3("What is the climate like where you live?"),
+                        choices = list("More Often Cold" = 1, "More Often Hot" = 2,
+                                       "Considerably Temperate" = 3), selected = 1)),
+      column(4,
+             radioButtons("firsttime", h3("Is this your first doggo?"),
+                        choices = list("Yes" = 1, "No" = 2),selected = 1)),
+      column(4,
+            sliderInput("alone", h3("How many hours of the day will someone be in the house with the doggo?"),
+                       min = 0, max = 24, value = 12)),
+      column(4,
+            radioButtons("shedding", h3("How do you feel abour drooling and shedding?"),
+                       choices = list("I don't want shedding or drooling!" = 1, "I don't mind shedding but no drooling!" = 2, "I don't mind drooling but no shedding!" = 4, "Not important." = 5),selected = 1)),
+      column(4,
+            sliderInput("friendliness", h3("I'm very good at getting along with other people."),
+                       min = 0, max = 10, value = 5)),
+      column(4,
+            sliderInput("wanderlust", h3("I often lose my way because I drift off into other thoughts."),
+                       min = 0, max = 10, value = 5)),
+      column(4,
+            sliderInput("barkers", h3("I always express my opinion when i don't agree with someone."),
+                       min = 0, max = 10, value = 5)),
+      column(4,
+            radioButtons("important", h3("Which of the following characteristics is most important to you as a doggo owner?"),
+                       choices = list("Intelligent Doggo" = 1, "Cuddly Doggo" = 2, "Playful Doggo" = 3, 
+                                      "Easily Trainable Doggo"),selected = 1)),
+      column(4,
+            radioButtons("important2", h3("Which of the following characteristics is second most important to you as a doggo owner?"),
+                       choices = list("Intelligent Doggo" = 1, "Cuddly Doggo" = 2, "Playful Doggo" = 3, 
+                                      "Easily Trainable Doggo"),selected = 1))
+      ),
+    mainPanel("Placeholder"),
+    actionButton("enter", label = "Retrieve Doggo Mates")
+    ),
+  server <- function(input, output) {
+  
+  }
+)
+```
+
+
+
+```{r}
+shinyApp(
+  ui <- fluidPage(
+    theme = shinytheme("flatly"),
+    titlePanel("Find Your Doggo Companion"),
+    sidebarLayout(
+    sidebarPanel(
+      h5("Your answers to the following questions will determine the best doggos that match your personality and your needs, leading to an all together better doggo-human companionship. Using our state-of-the art mixed membership modeling algorithms, we offer the best doggo matches as well as providing you with statistics on your match."),
+      h5("Part I: Matching The Doggo To the Right Home"),
+      radioButtons("dwelling", h4("What kind of home do you live in?"),
+                        choices = list("Apartment" = 1, "House" = 2,
+                                       "Dorm" = 3),selected = 1),
+      radioButtons("weather", h4("What is the climate like where you live?"),
+                        choices = list("More Often Cold" = 1, "More Often Hot" = 2,
+                                       "Considerably Temperate" = 3), selected = 1),
+      radioButtons("firsttime", h4("Is this your first doggo?"),
+                        choices = list("Yes" = 1, "No" = 2),selected = 1),
+      h5("Part 2: Matching the Human to the Right Doggo"),
+      sliderInput("friendliness", h4("I'm very good at getting along with new people."),
+                       min = 0, max = 5, value = 3),
+      sliderInput("energy", h4("I love running and playing outside."),
+                       min = 0, max = 5, value = 3),
+      sliderInput("intense", h4("I can sometimes get carried away with my arguments and not realize I am hurting others."),
+                       min = 0, max = 5, value = 3),
+      sliderInput("wanderlust", h4("I consider myself a free spirit: what's mine is yours."),
+                       min = 0, max = 5, value = 3),
+      radioButtons("important", h4("Which of the following characteristics is most important to you as a doggo owner?"),
+                       choices = list("Friendly, Cuddly Doggo" = 1, "Playful, Energetic Doggo" = 2, "Easy To Train, Independent Doggo" = 3),selected = 1),
+      actionButton("enter", label = "Retrieve Doggo Mates")),
+    mainPanel("yo"), c("left"))),
+  server <- function(input, output) {
+    #filtering = eventReactive(input$enter, {
+    #  temp <- dog_groups {
+    #    if (input$'dwelling' == 2) {
+    #    temp = temp %>% filter(temp$ == input$'Title')
+    #  }
+    #  }
+    #})
+  }
+)
+```

@@ -1,0 +1,221 @@
+---
+title: "Final Project"
+author: "Ekim Buyuk"
+date: "11/25/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+if (!require("readr")) install.packages("readr")
+library(readr)
+if (!require("rvest")) install.packages("rvest")
+library(rvest)
+if (!require("XML")) install.packages("XML")
+library(XML)
+if (!require("RCurl")) install.packages("RCurl")
+library(RCurl)
+if (!require("dplyr")) install.packages("dplyr")
+library(dplyr)
+if (!require("stringr")) install.packages("stringr")
+library(stringr)
+if (!require("stringi")) install.packages("stringi")
+library(stringi)
+if (!require("mixedMem")) install.packages("mixedMem")
+library(mixedMem)
+if (!require("tibble")) install.packages("tibble")
+library(tibble)
+```
+
+```{r initial data setup,echo=FALSE,warning=FALSE}
+url = "https://dogtime.com/dog-breeds"
+page = read_html(url)
+
+# get the links on the search page
+dog_list = page %>%
+  html_nodes('.post-title') %>%
+  html_attr('href')
+
+# merge with the base URL
+links = getRelativeURL(dog_list, url)
+```
+
+```{r individual functions,echo=FALSE}
+extract_text = function(page, tag){
+  res = page %>% 
+    html_nodes(tag) %>%
+    html_text()
+  
+  return(res)
+}
+
+dog.name <- function(page) {
+  words = extract_text(page, 'h1:nth-child(1)')
+  return(words)
+}
+
+dog.personality <- function(page){
+  words = extract_text(page, '.item-expandable-content:nth-child(5) .js-breed-data-section')
+  return(words)
+}
+
+dog.traits <- function(page){
+  words = extract_text(page,'.characteristics-ratings+ .dashed-box .inside-box')
+  return(words)
+}
+
+dog.stars <- function(page){
+  words = extract_text(page,'.more-info')
+  return(words)
+}
+
+dog.personality2 <- function(page){
+  words = extract_text(page,'.item-expandable-content:nth-child(1) p')
+  return(words)
+}
+
+dog.image <- function(page) {
+  ImgNode <- page %>% html_node(".article-content img")
+  link <- html_attr(ImgNode, "src")
+  return(link)
+}
+```
+
+```{r extract all information}
+dog.info <- function(url){
+  page = read_html(url)
+  ans = list(dog.name = dog.name(page),
+             blurb = dog.personality(page),
+             traits = dog.traits(page),
+             stars = dog.stars(page),
+             blurb2 = dog.personality2(page),
+             imagelink = dog.image(page)
+  )
+  ans
+}
+```
+
+# Put Extracted Data Into A Dataframe
+
+```{r}
+#Function to extract information for every star on an individual page:
+stars_col <- function(col3) {
+  stars = c()
+  for (i in 1:26) {
+    ans = stri_extract_first_regex(col3[i], "[0-9]+")
+    stars <- append(stars, ans)
+  }
+  as.data.frame(stars)
+}
+
+#For Loop to extract information from all links
+
+datalist = list()
+
+for (i in 1:length(links)) {
+  col3 = as.data.frame(dog.info(links[i])[4]) #creating a dataframe of all stars information in a page
+  dat <- stars_col(col3$stars) #calling above function
+  colnames(dat) <- as.character(dog.info(links[i])[1]) #changing column names to dog names
+  datalist[[i]] <- dat #appending to my dataframe
+}
+
+stars_data = do.call(cbind, datalist)
+write.csv(stars_data, "Stars Dataset.csv")
+```
+
+```{r}
+#Get Names of Personality Traits Binded On:
+traits = as.data.frame(dog.info(links[1])[4])
+stars =  c()
+for (i in 1:26) {
+  ans = gsub("[^a-zA-Z]", "", traits$stars[i])
+  ans = str_remove(ans,"Moreinfo")
+  stars <- append(stars, ans)
+}
+     
+stars_data = cbind(stars,stars_data)
+
+#Switch Rows and Columns
+switch = as.data.frame(t(stars_data))
+colnames(switch) <- as.character(unlist(switch[1,]))
+final_stars_data = switch[-1, ] 
+
+final_stars_data <- mutate_all(final_stars_data, function(x) as.numeric(as.character(x)))
+rownames(final_stars_data) <- row.names(switch[-1, ] )
+
+#So strange that this one was an NA so we impute it:
+final_stars_data$PotentialForPlayfulness[which(is.na(final_stars_data$PotentialForPlayfulness == TRUE))] <- 4
+
+final_stars_data[final_stars_data == 1] <- 0
+final_stars_data[final_stars_data == 2] <- 1
+final_stars_data[final_stars_data == 3] <- 2
+final_stars_data[final_stars_data == 4] <- 3
+final_stars_data[final_stars_data == 5] <- 4
+```
+
+
+```{r}
+#Get Personality Blurb Binded On:
+
+#Figure out which do not have the same tag
+#datalist = list()
+#for (i in 1:length(links)) {
+#  col = as.data.frame(dog.info(links[i])[2])
+#  datalist[i] <- paste0(col)
+#}
+#blurbs = as.data.frame(unlist(datalist))
+#which(blurbs == "integer(0)")
+
+datalist = list()
+for (i in 1:length(links)) {
+  if(i == 8 | i == 15 | i == 20 | i == 21 | i == 30 | i == 39 | i == 41 |
+     i == 48 | i == 49 | i == 63 | i == 81 | i == 88 | i == 90 | i == 112 |
+     i == 113 | i == 127 | i == 133 | i == 134 | i == 149 | i == 151 |
+     i == 173 | i == 175 | i == 193 | i == 194 | i == 196 | i == 205 | 
+     i == 206) {
+    dog_info = dog.info(links[i])[5]
+    col = as.data.frame(paste(unlist(dog_info[1]), collapse=''))
+     }
+  else {
+    col = as.data.frame(dog.info(links[i])[2]) 
+    }
+  datalist[i] <- col
+}
+blurbs = as.data.frame(unlist(datalist))
+colnames(blurbs) <- c("PersonalityBlurb")
+blurbs_and_stars_data = cbind(final_stars_data,blurbs)
+```
+
+#Get Picture Link
+
+```{r}
+library(rvest)
+url = "https://dogtime.com/dog-breeds"
+download.file(url, destfile = "scrapedpage.html", quiet=TRUE)
+content <- read_html("scrapedpage.html")
+
+imagelist = list()
+
+for (i in 1:length(links)) {
+  image_links = as.data.frame(dog.info(links[i])[6])
+  imagelist[i] <- image_links
+}
+
+image_links = as.data.frame(unlist(image_list))
+colnames(image_links) <- c("ImageLinks")
+links_and_blurbs = cbind(blurbs,image_links)
+```
+
+Error in open.connection(x, "rb") : HTTP error 504.??? 
+
+```{r}
+#Get Extra Information on Stars Meanings
+star_des = as.list(extract_text(read_html(links[1]), '.description p:nth-child(1)'))
+star_des = as.list(extract_text(read_html(links[1]), '.description'))
+star_des  = as.data.frame(t(as.data.frame(star_des)))
+rownames(star_des) = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26)
+colnames(star_des) = c("Descriptions")
+```
+
+
+The important traits are: a tendency to share possessions, love of running outside, likeliness of being destructive, and ability to get along with others.
+
